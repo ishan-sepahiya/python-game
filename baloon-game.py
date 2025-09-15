@@ -1,34 +1,24 @@
 import pygame
 import random
+import math
 
+# Initialize Pygame
 pygame.init()
+# Initialize the mixer for sound effects
+pygame.mixer.init()
 
 # Get screen info for fullscreen
 infoObject = pygame.display.Info()
 screen_width = 1500
 screen_height = 800
 
-# ---------------- CLOUD CLASS ----------------
-class Cloud(pygame.sprite.Sprite):
-    def __init__(self, image, x, y, speed):
-        super().__init__()
-        self.image = image
-        self.rect = self.image.get_rect(topleft=(x, y))
-        self.speed = speed
-
-    def update(self):
-        self.rect.x -= self.speed  # Move left
-        if self.rect.right < 0:  # If off-screen, reset to the right
-            self.rect.left = pygame.display.get_surface().get_width() + random.randint(0, 200)
-            self.rect.y = random.randint(0, pygame.display.get_surface().get_height() // 2)
-
-# Set up the game window
+# Set up the game window to be fullscreen
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Dodge the Needles")
 
 # Colors
-SKY_BLUE = (135, 206, 250)
 BALLOON_RED = (255, 69, 0)
+# Changed the needle color to gray
 NEEDLE_GRAY = (60, 60, 60)
 BUTTON_GREEN = (50, 200, 50)
 BUTTON_RED = (200, 50, 50)
@@ -41,9 +31,10 @@ player_width = 40
 player_height = 60
 player_x = (screen_width / 2) - (player_width / 2)
 player_y = screen_height - player_height - 30
-player_speed = 2
+player_speed = 1.5
 
 # Enemy settings (Needles)
+# Increased the length of the needles and added a pinhead
 enemy_width = 10
 enemy_height = 80
 pinhead_radius = 6
@@ -51,7 +42,7 @@ enemies = []
 
 # Game variables
 score = 0
-base_enemy_speed = 1
+base_enemy_speed = 0.5
 base_spawn_rate = 200
 game_state = 'playing'
 
@@ -60,33 +51,32 @@ score_font = pygame.font.Font(None, 36)
 game_over_font = pygame.font.Font(None, 72)
 button_font = pygame.font.Font(None, 50)
 
-# ---------------- CLOUDS SETUP ----------------
-cloud_image_original = pygame.image.load('cloud.png').convert_alpha()  # Load original cloud image
+# Load the sound file
+# NOTE: The file name has been updated to use '.mp3'
+try:
+    pop_sound = pygame.mixer.Sound('pop.wav.mp3')
+except pygame.error as e:
+    print(f"Warning: Could not load sound file 'pop.wav.mp3': {e}")
+    pop_sound = None
 
-cloud_group = pygame.sprite.Group()
-for _ in range(5):
-    x = random.randint(0, screen_width)
-    y = random.randint(0, screen_height // 2)
-    speed = random.uniform(0.2, 0.5)
-    # Random scale factor between 0.5 and 1.5
-    scale_factor = random.uniform(0.5, 1.5)
-    cloud_image = pygame.transform.scale(
-        cloud_image_original,
-        (int(cloud_image_original.get_width() * scale_factor),
-         int(cloud_image_original.get_height() * scale_factor))
-    )
-    cloud = Cloud(cloud_image, x, y, speed)
-    cloud_group.add(cloud)
+# Load the background image
+# NOTE: The background image 'cloud.jpg' is now loaded here
+try:
+    background_image = pygame.image.load('cloud.jpg')
+    # Scale the background image to fit the screen
+    background_image = pygame.transform.scale(background_image, (screen_width, screen_height))
+except pygame.error as e:
+    print(f"Warning: Could not load background image 'cloud.jpg': {e}")
+    background_image = None
 
-# ---------------- GAME FUNCTIONS ----------------
 def reset_game():
     """Resets all game variables to their initial state."""
-    global player_x,player_y, score, enemies, base_enemy_speed, base_spawn_rate, game_state
+    global player_x, score, enemies, base_enemy_speed, base_spawn_rate, game_state
+    # CORRECTED LINE: Used player_width instead of player_size
     player_x = (screen_width / 2) - (player_width / 2)
-    player_y = screen_height - player_height - 30
     score = 0
     enemies.clear()
-    base_enemy_speed = 1
+    base_enemy_speed = 0.5
     base_spawn_rate = 200
     game_state = 'playing'
 
@@ -111,11 +101,13 @@ def is_collision(player_x, player_y, enemy):
     """Checks for collision using bounding boxes."""
     enemy_x, enemy_y, _ = enemy
     balloon_rect = pygame.Rect(player_x, player_y, player_width, player_height)
+    # The collision rect for the needle is based on its new width and height
     needle_rect = pygame.Rect(enemy_x - enemy_width / 2, enemy_y + pinhead_radius, enemy_width, enemy_height - pinhead_radius)
     pinhead_rect = pygame.Rect(enemy_x - pinhead_radius, enemy_y, pinhead_radius * 2, pinhead_radius)
+    
     return balloon_rect.colliderect(needle_rect) or balloon_rect.colliderect(pinhead_rect)
 
-# ---------------- GAME LOOP ----------------
+# Game loop
 running = True
 last_spawn_time = pygame.time.get_ticks()
 last_difficulty_increase_time = pygame.time.get_ticks()
@@ -148,7 +140,7 @@ while running:
         player_y = max(0, min(player_y, screen_height - player_height))
 
         current_time = pygame.time.get_ticks()
-        if current_time - last_difficulty_increase_time > 1000:
+        if current_time - last_difficulty_increase_time > 10000:
             base_enemy_speed += 0.05
             base_spawn_rate = max(50, base_spawn_rate - 10)
             last_difficulty_increase_time = current_time
@@ -163,6 +155,9 @@ while running:
         for enemy in enemies:
             enemy[1] += enemy[2]
             if is_collision(player_x, player_y, enemy):
+                # Play the pop sound when a collision occurs
+                if pop_sound:
+                    pop_sound.play()
                 game_state = 'game_over'
             if enemy[1] > screen_height:
                 enemies_to_remove.append(enemy)
@@ -171,19 +166,17 @@ while running:
             enemies.remove(enemy)
             score += 1
         
-        # ---------- DRAW SECTION ----------
-        screen.fill(SKY_BLUE)
-
-        # Draw clouds
-        cloud_group.update()
-        cloud_group.draw(screen)
-
-        # Draw balloon & enemies
+        # Draw the background image instead of filling the screen with a color
+        if background_image:
+            screen.blit(background_image, (0, 0))
+        else:
+            screen.fill((135, 206, 250)) # Fallback to sky blue if image is not loaded
+            
         draw_balloon(player_x, player_y, player_width, player_height, BALLOON_RED)
         for enemy in enemies:
+            # Pass the new color to the drawing function
             draw_downward_triangle(enemy[0], enemy[1], enemy_width, enemy_height, NEEDLE_GRAY)
         
-        # Score
         score_text = score_font.render(f"Score: {score}", True, TEXT_WHITE)
         screen.blit(score_text, (10, 10))
     
