@@ -44,11 +44,13 @@ enemies = []
 score = 0
 base_enemy_speed = 0.5
 base_spawn_rate = 200
-game_state = 'playing'
+# The game now starts at the 'start_menu'
+game_state = 'start_menu'
 
 # Fonts
 score_font = pygame.font.Font(None, 36)
 game_over_font = pygame.font.Font(None, 72)
+title_font = pygame.font.Font(None, 90) # Font for the title
 button_font = pygame.font.Font(None, 50)
 
 # Load the sound file
@@ -117,12 +119,22 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         
-        if game_state == 'game_over':
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_pos = event.pos
+        # Handle mouse clicks for different game states
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = event.pos
+            if game_state == 'start_menu':
+                if start_button_rect.collidepoint(mouse_pos):
+                    game_state = 'playing'
+                elif quit_button_rect.collidepoint(mouse_pos):
+                    running = False
+            elif game_state == 'game_over':
                 if retry_button_rect.collidepoint(mouse_pos):
+                    if pop_sound:
+                        pop_sound.stop()
                     reset_game()
                 elif quit_button_rect.collidepoint(mouse_pos):
+                    if pop_sound:
+                        pop_sound.stop()
                     running = False
 
     if game_state == 'playing':
@@ -180,6 +192,32 @@ while running:
         score_text = score_font.render(f"Score: {score}", True, TEXT_WHITE)
         screen.blit(score_text, (10, 10))
     
+    elif game_state == 'start_menu':
+        # Draw background for the start menu
+        if background_image:
+            screen.blit(background_image, (0, 0))
+        else:
+            screen.fill((135, 206, 250))
+        
+        # Draw Title
+        title_text = title_font.render("Dodge the Needles", True, TEXT_WHITE)
+        title_rect = title_text.get_rect(center=(screen_width/2, screen_height/2 - 150))
+        screen.blit(title_text, title_rect)
+        
+        # Start Button
+        start_button_text = button_font.render("Start", True, TEXT_WHITE)
+        start_button_rect = pygame.Rect(screen_width/2 - 100, screen_height/2, 200, 60)
+        pygame.draw.rect(screen, BUTTON_GREEN, start_button_rect)
+        start_text_rect = start_button_text.get_rect(center=start_button_rect.center)
+        screen.blit(start_button_text, start_text_rect)
+        
+        # Quit Button
+        quit_button_text = button_font.render("Quit", True, TEXT_WHITE)
+        quit_button_rect = pygame.Rect(screen_width/2 - 100, screen_height/2 + 80, 200, 60)
+        pygame.draw.rect(screen, BUTTON_RED, quit_button_rect)
+        quit_text_rect = quit_button_text.get_rect(center=quit_button_rect.center)
+        screen.blit(quit_button_text, quit_text_rect)
+
     elif game_state == 'game_over':
         screen.fill(BACKGROUND_BLACK)
         
@@ -191,12 +229,14 @@ while running:
         final_score_rect = final_score_text.get_rect(center=(screen_width/2, screen_height/2 - 20))
         screen.blit(final_score_text, final_score_rect)
         
+        # Retry Button
         retry_button_text = button_font.render("Retry", True, TEXT_WHITE)
         retry_button_rect = pygame.Rect(screen_width/2 - 100, screen_height/2 + 50, 200, 60)
         pygame.draw.rect(screen, BUTTON_GREEN, retry_button_rect)
         retry_text_rect = retry_button_text.get_rect(center=retry_button_rect.center)
         screen.blit(retry_button_text, retry_text_rect)
         
+        # Quit Button
         quit_button_text = button_font.render("Quit", True, TEXT_WHITE)
         quit_button_rect = pygame.Rect(screen_width/2 - 100, screen_height/2 + 130, 200, 60)
         pygame.draw.rect(screen, BUTTON_RED, quit_button_rect)
@@ -206,3 +246,4 @@ while running:
     pygame.display.update()
 
 pygame.quit()
+ 
