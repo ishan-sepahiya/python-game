@@ -225,13 +225,25 @@ while running:
         screen.blit(quit_button_text, quit_text_rect)
 
     elif game_state == 'game_over':
-        screen.fill(BACKGROUND_BLACK)
+        # Draw background for the game over menu
+        if background_image:
+            screen.blit(background_image, (0, 0))
+        else:
+            screen.fill((135, 206, 250))
         
-        game_over_text = game_over_font.render("Game Over", True, TEXT_WHITE)
-        game_over_rect = game_over_text.get_rect(center=(screen_width/2, screen_height/2 - 100))
-        screen.blit(game_over_text, game_over_rect)
-        
-        final_score_text = score_font.render(f"Final Score: {score}", True, TEXT_WHITE)
+        #Title shadow
+        TEXT_BLACK = (0, 0, 0)
+        shadow_text = title_font.render("Game Over", True, TEXT_BLACK)
+        shadow_rect = shadow_text.get_rect(center=(screen_width/2 + 3, screen_height/2 - 150 + 3)) # Offset by 3 pixels
+        screen.blit(shadow_text, shadow_rect)
+
+        # Draw Title
+        title_text = title_font.render("Game Over", True, TEXT_WHITE)
+        title_rect = title_text.get_rect(center=(screen_width/2, screen_height/2 - 150))
+        screen.blit(title_text, title_rect)
+
+        # final score
+        final_score_text = score_font.render(f"Final Score: {score}", True, TEXT_BLACK)
         final_score_rect = final_score_text.get_rect(center=(screen_width/2, screen_height/2 - 20))
         screen.blit(final_score_text, final_score_rect)
         
@@ -252,3 +264,4 @@ while running:
     pygame.display.update()
 
 pygame.quit()
+    
