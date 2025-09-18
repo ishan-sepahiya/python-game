@@ -1,6 +1,5 @@
 import pygame
 import random
-import math
 
 # Initialize Pygame
 pygame.init()
@@ -73,9 +72,10 @@ except pygame.error as e:
 
 def reset_game():
     """Resets all game variables to their initial state."""
-    global player_x, score, enemies, base_enemy_speed, base_spawn_rate, game_state
+    global player_x, player_y, score, enemies, base_enemy_speed, base_spawn_rate, game_state
     # CORRECTED LINE: Used player_width instead of player_size
     player_x = (screen_width / 2) - (player_width / 2)
+    player_y = screen_height - player_height - 30
     score = 0
     enemies.clear()
     base_enemy_speed = 0.5
@@ -199,6 +199,12 @@ while running:
         else:
             screen.fill((135, 206, 250))
         
+        #Title shadow
+        TEXT_BLACK = (0, 0, 0)
+        shadow_text = title_font.render("Dodge the Needles", True, TEXT_BLACK)
+        shadow_rect = shadow_text.get_rect(center=(screen_width/2 + 3, screen_height/2 - 150 + 3)) # Offset by 3 pixels
+        screen.blit(shadow_text, shadow_rect)
+
         # Draw Title
         title_text = title_font.render("Dodge the Needles", True, TEXT_WHITE)
         title_rect = title_text.get_rect(center=(screen_width/2, screen_height/2 - 150))
@@ -246,4 +252,3 @@ while running:
     pygame.display.update()
 
 pygame.quit()
- 
